@@ -2,6 +2,12 @@
 
 Repositório para o projeto de Experimentação em Software da PUC Minas, focado em estudar a atividade de code review em repositórios populares do GitHub.
 
+## Integrantes
+
+- Eric Rodrigues Diniz
+- Pablo Guilherme
+- Ian
+
 ## Objetivo
 
 Analisar Pull Requests (PRs) em repositórios populares para entender como diferentes fatores influenciam:
@@ -34,4 +40,4 @@ Analisar Pull Requests (PRs) em repositórios populares para entender como difer
    - Hipóteses iniciais
    - Metodologia detalhada
    - Resultados e discussão
-   - Conclusões sobre cada questão de pesquisa
+   - Conclusões sobre cada questão de pesquis
