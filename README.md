@@ -5,6 +5,7 @@ Repositório para o projeto de Experimentação em Software da PUC Minas, focado
 ## Objetivo
 
 Analisar Pull Requests (PRs) em repositórios populares para entender como diferentes fatores influenciam:
+
 - A decisão de merge/rejeição (status do PR)
 - O número de revisões realizadas
 
