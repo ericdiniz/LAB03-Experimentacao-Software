@@ -1,49 +1,42 @@
-import csv
-import time
-from datetime import datetime
-import requests # type: ignore
+import requests
 from config import CONFIG
 
-def fetch_repositories():
-    params = {"q": "stars:>1", "sort": "stars", "order": "desc", "per_page": 100}
-    repos = []
-    page = 1
+def get_top_repositories():  # Nome alterado para match com a importação
+    query = """
+    {
+      search(query: "stars:>5000", type: REPOSITORY, first: 10) {
+        edges {
+          node {
+            ... on Repository {
+              nameWithOwner
+              stargazerCount
+              pullRequests(states: [CLOSED, MERGED]) {
+                totalCount
+              }
+            }
+          }
+        }
+      }
+    }
+    """
 
-    while len(repos) < CONFIG["MAX_REPOS"]:
-        params["page"] = page
-        response = requests.get(
-            f"{CONFIG['GITHUB_API_URL']}/search/repositories",
-            params=params,
-            headers=CONFIG["HEADERS"]
+    try:
+        response = requests.post(
+            CONFIG["GITHUB_API_URL"],
+            json={"query": query},
+            headers=CONFIG["HEADERS"],
+            timeout=CONFIG["TIMEOUT"]
         )
         response.raise_for_status()
-        data = response.json()
-        repos.extend(data["items"])
-        if len(data["items"]) < 100:
-            break
-        page += 1
-        time.sleep(CONFIG["REQUEST_DELAY"])
 
-    return repos[:CONFIG["MAX_REPOS"]]
+        repos = [
+            edge["node"] for edge in
+            response.json()["data"]["search"]["edges"]
+            if edge["node"]["pullRequests"]["totalCount"] >= CONFIG["MIN_PRS"]
+        ]
 
-def save_repositories(repos):
-    filename = f"repos.csv"
+        return repos[:CONFIG["MAX_REPOS"]]
 
-    with open(filename, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(["id", "full_name", "stargazers_count", "html_url", "has_issues"])
-        for repo in repos:
-            writer.writerow([
-                repo["id"],
-                repo["full_name"],
-                repo["stargazers_count"],
-                repo["html_url"],
-                repo["has_issues"]
-            ])
-
-    return filename
-
-if __name__ == "__main__":
-    repositories = fetch_repositories()
-    output_file = save_repositories(repositories)
-    print(f"Saved: {output_file}")
+    except Exception as e:
+        print(f"Erro ao buscar repositórios: {str(e)}")
+        return []
