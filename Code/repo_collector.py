@@ -1,42 +1,53 @@
 import requests
+import time
 from config import CONFIG
 
-def get_top_repositories():  # Nome alterado para match com a importação
+def get_repositories():
     query = """
-    {
-      search(query: "stars:>5000", type: REPOSITORY, first: 10) {
-        edges {
-          node {
-            ... on Repository {
-              nameWithOwner
-              stargazerCount
-              pullRequests(states: [CLOSED, MERGED]) {
-                totalCount
-              }
-            }
+    query ($cursor: String) {
+      search(
+        query: "sort:stars-desc",
+        type: REPOSITORY,
+        first: 50,
+        after: $cursor
+      ) {
+        nodes {
+          ... on Repository {
+            nameWithOwner
+            pullRequests(states: [CLOSED, MERGED]) { totalCount }
           }
         }
+        pageInfo { hasNextPage endCursor }
       }
     }
     """
 
-    try:
-        response = requests.post(
-            CONFIG["GITHUB_API_URL"],
-            json={"query": query},
-            headers=CONFIG["HEADERS"],
-            timeout=CONFIG["TIMEOUT"]
-        )
-        response.raise_for_status()
+    repos = []
+    cursor = None
 
-        repos = [
-            edge["node"] for edge in
-            response.json()["data"]["search"]["edges"]
-            if edge["node"]["pullRequests"]["totalCount"] >= CONFIG["MIN_PRS"]
-        ]
+    while len(repos) < CONFIG["MAX_REPOS"]:
+        try:
+            response = requests.post(
+                CONFIG["GITHUB_API_URL"],
+                json={"query": query, "variables": {"cursor": cursor}},
+                headers=CONFIG["HEADERS"],
+                timeout=CONFIG["TIMEOUT"]
+            )
+            data = response.json()
 
-        return repos[:CONFIG["MAX_REPOS"]]
+            for repo in data["data"]["search"]["nodes"]:
+                if repo["pullRequests"]["totalCount"] >= CONFIG["MIN_PRS"]:
+                    repos.append(repo)
+                    if len(repos) >= CONFIG["MAX_REPOS"]:
+                        break
 
-    except Exception as e:
-        print(f"Erro ao buscar repositórios: {str(e)}")
-        return []
+            if not data["data"]["search"]["pageInfo"]["hasNextPage"]:
+                break
+
+            cursor = data["data"]["search"]["pageInfo"]["endCursor"]
+            time.sleep(CONFIG["REQUEST_DELAY"])
+
+        except Exception:
+            break
+
+    return repos
