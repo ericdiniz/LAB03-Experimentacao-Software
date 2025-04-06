@@ -1,4 +1,5 @@
-import requests
+import time
+import requests # type: ignore
 from datetime import datetime
 from config import CONFIG
 
@@ -33,8 +34,9 @@ def get_repository_prs(owner, name):
     prs = []
     after = None
     has_next = True
+    attempts = 0
 
-    while has_next:
+    while has_next and attempts < CONFIG["MAX_RETRIES"]:
         try:
             response = requests.post(
                 CONFIG["GITHUB_API_URL"],
@@ -44,9 +46,8 @@ def get_repository_prs(owner, name):
             )
             response.raise_for_status()
             data = response.json()
-            pr_data = data["data"]["repository"]["pullRequests"]
 
-            for pr in pr_data["nodes"]:
+            for pr in data["data"]["repository"]["pullRequests"]["nodes"]:
                 try:
                     created = datetime.fromisoformat(pr["createdAt"].replace("Z", ""))
                     merged = datetime.fromisoformat(pr["mergedAt"].replace("Z", "")) if pr.get("mergedAt") else None
@@ -74,11 +75,12 @@ def get_repository_prs(owner, name):
                 except Exception:
                     continue
 
-            has_next = pr_data["pageInfo"]["hasNextPage"]
-            after = pr_data["pageInfo"]["endCursor"]
+            has_next = data["data"]["repository"]["pullRequests"]["pageInfo"]["hasNextPage"]
+            after = data["data"]["repository"]["pullRequests"]["pageInfo"]["endCursor"]
             time.sleep(CONFIG["REQUEST_DELAY"])
 
         except Exception:
-            break
+            attempts += 1
+            time.sleep(CONFIG["REQUEST_DELAY"] * 2)
 
     return prs
