@@ -39,11 +39,8 @@ def main():
 
         if not repositories:
             print("\nFalha crítica: Não foi possível obter repositórios")
-            print("Soluções possíveis:")
-            print("1. Verifique seu token no arquivo .env")
-            print("2. Teste manualmente com:")
+            print("1. Teste manualmente com:")
             print(f"   curl -H \"Authorization: bearer {CONFIG['HEADERS']['Authorization'][7:]}\" https://api.github.com/user")
-            print("3. Espere 1 hora se excedeu o rate limit")
             return
 
         print(f"\nRepositórios encontrados: {len(repositories)}")

@@ -6,7 +6,7 @@ def get_repositories():
     query = """
     query ($cursor: String) {
       search(
-        query: "stars:>500 sort:stars-desc",
+        query: "stars:>100 sort:stars-desc",
         type: REPOSITORY,
         first: 10,
         after: $cursor
