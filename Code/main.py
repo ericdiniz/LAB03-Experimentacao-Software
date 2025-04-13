@@ -10,7 +10,7 @@ def format_time(seconds):
     return str(timedelta(seconds=seconds)).split('.')[0]
 
 def save_to_csv(data, filename):
-    os.makedirs('resultados', exist_ok=True)
+    os.makedirs('results', exist_ok=True)
     filepath = os.path.join('resultados', filename)
 
     fieldnames = [
