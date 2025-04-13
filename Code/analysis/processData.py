@@ -1,19 +1,22 @@
 import pandas as pd
 import os
+from pathlib import Path
 
-# Configuração
-INPUT_CSV = "../data/pull_requests_final.csv"
-OUTPUT_CSV = "../data/dataset_processado.csv"
+current_dir = Path(__file__).parent
+input_csv = current_dir.parent / "results" / "pullRequestsFinal.csv"
+output_csv = current_dir.parent / "results" / "datasetProcessado.csv"
+plots_dir = current_dir.parent / "plots"
 
-# Carrega os dados brutos
+os.makedirs(output_csv.parent, exist_ok=True)
+os.makedirs(plots_dir, exist_ok=True)
+
 try:
-    df = pd.read_csv(INPUT_CSV)
+    df = pd.read_csv(input_csv)
     print(f"✅ Dataset carregado: {len(df)} PRs")
 except FileNotFoundError:
-    print(f"❌ Arquivo {INPUT_CSV} não encontrado. Execute main.py primeiro.")
+    print(f"❌ Arquivo {input_csv} não encontrado. Execute main.py primeiro.")
     exit()
 
-# Filtros e métricas (exigidos no laboratório)
 df = df[
     (df['reviews'] >= 1) &
     ((df['time_to_merge'] >= 1) | (df['time_to_close'] >= 1))
@@ -22,7 +25,5 @@ df = df[
 df['total_lines'] = df['additions'] + df['deletions']
 df['has_description'] = df['description_length'] > 0
 
-# Salva o dataset processado
-os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-df.to_csv(OUTPUT_CSV, index=False)
-print(f"🚀 Dataset processado salvo em {OUTPUT_CSV} (Lab03S02 concluído).")
+df.to_csv(output_csv, index=False)
+print(f"🚀 Dataset processado salvo em {output_csv} (Lab03S02 concluído).")

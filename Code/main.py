@@ -55,7 +55,7 @@ def main():
             if i % 10 == 0:
                 save_to_csv(all_prs, f"partial_{i}.csv")
 
-        if save_to_csv(all_prs, "pull_requests_final.csv"):
+        if save_to_csv(all_prs, "pullRequestsFinal.csv"):
             total_time = time.time() - start_time
             print(f"\n=== COLETA CONCLUÍDA ===")
             print(f"Horário de término: {time.strftime('%d/%m %H:%M')}")
