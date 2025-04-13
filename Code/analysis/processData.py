@@ -24,6 +24,16 @@ df = df[
 
 df['total_lines'] = df['additions'] + df['deletions']
 df['has_description'] = df['description_length'] > 0
+df['interactions'] = df['comments'] + df['reviews']
+df['review_density'] = df['reviews'] / df['time_to_merge']
+
+required_columns = ['state', 'changed_files', 'time_to_merge', 'description_length',
+                   'comments', 'reviews', 'total_lines', 'has_description',
+                   'interactions', 'review_density']
+
+for col in required_columns:
+    if col not in df.columns:
+        df[col] = 0
 
 df.to_csv(output_csv, index=False)
 print(f"🚀 Dataset processado salvo em {output_csv} (Lab03S02 concluído).")
