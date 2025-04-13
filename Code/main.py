@@ -25,8 +25,7 @@ def save_to_csv(data, filename):
             writer.writeheader()
             writer.writerows(data)
         return True
-    except Exception as e:
-        print(f"Erro ao salvar CSV: {str(e)}")
+    except Exception:
         return False
 
 def main():
@@ -34,48 +33,43 @@ def main():
     print(f"\n=== INÍCIO DA COLETA {time.strftime('%d/%m %H:%M')} ===")
 
     try:
-        print("Testando conexão com a API...")
+        print("\nFase 1: Buscando repositórios válidos...")
         repositories = get_repositories()
 
         if not repositories:
-            print("\nFalha crítica: Não foi possível obter repositórios")
-            print("1. Teste manualmente com:")
-            print(f"   curl -H \"Authorization: bearer {CONFIG['HEADERS']['Authorization'][7:]}\" https://api.github.com/user")
+            print("\nFalha crítica: Não foi possível obter repositórios válidos")
             return
 
-        print(f"\nRepositórios encontrados: {len(repositories)}")
-        print("Iniciando coleta de PRs...")
-
+        print(f"\nFase 2: Coletando PRs dos {len(repositories)} repositórios...")
         all_prs = []
+
         for i, repo in enumerate(repositories, 1):
-            owner, name = repo["nameWithOwner"].split('/')
-            print(f"\n[{i}/{len(repositories)}] Coletando {owner}/{name}")
+            owner, name = repo.split('/')
+            print(f"\n[{i}/{len(repositories)}] Processando {owner}/{name}")
 
             prs = get_repository_prs(owner, name)
             if prs:
                 all_prs.extend(prs)
                 print(f"PRs válidos coletados: {len(prs)}")
-            else:
-                print("Nenhum PR válido encontrado")
 
-        if save_to_csv(all_prs, "pull_requests.csv"):
+            if i % 10 == 0:
+                save_to_csv(all_prs, f"partial_{i}.csv")
+
+        if save_to_csv(all_prs, "pull_requests_final.csv"):
             total_time = time.time() - start_time
             print(f"\n=== COLETA CONCLUÍDA ===")
             print(f"Horário de término: {time.strftime('%d/%m %H:%M')}")
             print(f"Tempo total: {format_time(total_time)}")
             print(f"Repositórios processados: {len(repositories)}")
             print(f"Total de PRs coletados: {len(all_prs)}")
-            print(f"Arquivo gerado: resultados/pull_requests.csv")
-        else:
-            print("\nErro ao salvar os dados coletados")
+            print(f"Arquivo gerado: resultados/pull_requests_final.csv")
 
     except KeyboardInterrupt:
         print("\nColeta interrompida pelo usuário!")
-        if len(all_prs) > 0:
-            if save_to_csv(all_prs, "partial_pull_requests.csv"):
-                print("Dados parciais salvos em resultados/partial_pull_requests.csv")
-    except Exception as e:
-        print(f"\nErro inesperado: {str(e)}")
+        if 'all_prs' in locals() and len(all_prs) > 0:
+            save_to_csv(all_prs, "partial_interrupted.csv")
+    except Exception:
+        print("\nErro inesperado")
 
 if __name__ == "__main__":
     main()

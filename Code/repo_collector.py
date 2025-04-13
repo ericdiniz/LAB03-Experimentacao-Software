@@ -2,76 +2,76 @@ import requests # type: ignore
 import time
 from config import CONFIG
 
-def get_repositories():
-    query = """
-    query ($cursor: String) {
-      search(
-        query: "stars:>100 sort:stars-desc",
-        type: REPOSITORY,
-        first: 10,
-        after: $cursor
-      ) {
-        repositoryCount
-        edges {
-          node {
-            ... on Repository {
-              nameWithOwner
-              pullRequests(states: [CLOSED, MERGED]) {
-                totalCount
-              }
+def fetch_repos_page(page):
+    try:
+        response = requests.get(
+            f"{CONFIG['REST_API_URL']}/search/repositories",
+            params={
+                "q": "stars:>1000",
+                "sort": "stars",
+                "order": "desc",
+                "per_page": 100,
+                "page": page
+            },
+            headers=CONFIG["HEADERS"],
+            timeout=CONFIG["TIMEOUT"]
+        )
+        response.raise_for_status()
+        return [repo["full_name"] for repo in response.json()["items"]]
+    except Exception:
+        return []
+
+def check_repo_pr_count(repo_name):
+    try:
+        owner, name = repo_name.split('/')
+        query = """
+        query {
+          repository(owner: "%s", name: "%s") {
+            pullRequests(states: [CLOSED, MERGED]) {
+              totalCount
             }
           }
         }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-    """
+        """ % (owner, name)
 
-    repositories = []
-    cursor = None
-    attempts = 0
+        response = requests.post(
+            CONFIG["GITHUB_API_URL"],
+            json={"query": query},
+            headers=CONFIG["HEADERS"],
+            timeout=CONFIG["TIMEOUT"]
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data["data"]["repository"]["pullRequests"]["totalCount"]
+    except Exception:
+        return 0
 
-    while len(repositories) < 200 and attempts < 30:
-        try:
-            response = requests.post(
-                CONFIG["GITHUB_API_URL"],
-                json={"query": query, "variables": {"cursor": cursor}},
-                headers=CONFIG["HEADERS"],
-                timeout=240
-            )
+def get_repositories():
+    valid_repos = []
+    page = 1
+    seen_repos = set()
 
-            if response.status_code != 200:
-                print(f"Erro {response.status_code}. Tentativa {attempts + 1}/10")
-                attempts += 1
-                time.sleep(60)
+    while len(valid_repos) < 200:
+        new_repos = fetch_repos_page(page)
+        if not new_repos:
+            break
+
+        for repo in new_repos:
+            if repo in seen_repos:
                 continue
+            seen_repos.add(repo)
 
-            data = response.json()
+            pr_count = check_repo_pr_count(repo)
+            if pr_count >= 100:
+                valid_repos.append(repo)
+                print(f"✅ [{len(valid_repos)}/200] {repo} - PRs: {pr_count}")
+                if len(valid_repos) >= 200:
+                    break
 
-            if "errors" in data:
-                print("Erro na query:", data["errors"][0]["message"])
-                break
+            time.sleep(1)
 
-            new_repos = [
-                edge["node"] for edge in data["data"]["search"]["edges"]
-                if edge["node"]["pullRequests"]["totalCount"] >= 100
-            ]
+        page += 1
+        if page > 10:
+            break
 
-            repositories.extend(new_repos)
-            print(f"✅ Progresso: {len(repositories)}/200 repositórios")
-
-            if not data["data"]["search"]["pageInfo"]["hasNextPage"] or len(repositories) >= 200:
-                break
-
-            cursor = data["data"]["search"]["pageInfo"]["endCursor"]
-            time.sleep(30)  # Delay maior para evitar rate limit
-
-        except Exception as e:
-            print(f"Erro: {str(e)}")
-            attempts += 1
-            time.sleep(120)
-
-    return repositories[:200]
+    return valid_repos[:200]
