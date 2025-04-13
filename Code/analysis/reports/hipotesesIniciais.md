@@ -1,11 +1,31 @@
-# Hipóteses Iniciais
+# Hipóteses Iniciais - Análise de Code Review no GitHub
 
-## A: Feedback Final
+## (i) Introdução
 
-- **RQ01**: PRs com <= 3 arquivos alterados têm taxa de merge >70%.
-- **RQ02**: PRs com descrição (>100 chars) são merged 30% mais rápido.
+Este estudo investiga como características técnicas e sociais de Pull Requests (PRs) afetam seu processo de revisão em projetos open-source. Analisamos 525,234 PRs dos 200 repositórios mais populares do GitHub.
 
-## B: Número de Revisões
+## (ii) Metodologia
 
-- **RQ05**: PRs com +200 linhas modificadas exigem 2x mais revisões.
-- **RQ08**: PRs com >5 comentários têm 50% mais chance de serem closed.
+- **Dataset**: PRs com pelo menos 1 revisão e tempo de análise >1h
+- **Variáveis analisadas**:
+  - Tamanho (arquivos/linhas alteradas)
+  - Tempo de análise
+  - Qualidade da descrição
+  - Nível de interações
+- **Técnicas**: Análise estatística descritiva e correlação de Spearman
+
+## (iii) Hipóteses Informais
+
+### DA: Feedback Final
+
+**RQ01**: PRs menores têm maior taxa de aprovação
+**RQ02**: PRs mais rápidos são mais aprovados
+**RQ03**: Descrições detalhadas aumentam aprovação
+**RQ04**: Muitas interações indicam PRs problemáticos
+
+### B: Número de Revisões
+
+**RQ05**: PRs grandes exigem mais revisões
+**RQ06**: Revisões prolongadas geram mais ciclos
+**RQ07**: Boas descrições reduzem revisões
+**RQ08**: Discussões intensas levam a mais revisões
